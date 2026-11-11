@@ -1,86 +1,92 @@
-# Social - Screen
+# Social ▸ Screen
 
-Watch YouTube together in perfect sync. React + Vite client, Node/Express + `ws` + MongoDB server.
-Same architecture as `youtube-watch-party-v2` (server is the source of truth, ticket-based WebSockets),
-plus a lot of new features.
+Watch videos together with your friends, perfectly in sync. Make a room, share the link, and everyone's video plays, pauses and jumps at the same time. Chat, react, vote, take notes and even talk on a video call, all in one place.
+
+## Features
+
+**Watching together**
+- Everyone sees the same video at the same time (play, pause, seek, change video).
+- Late joiners and people who refresh land at the right moment.
+- Roles: **Host**, **Moderator** and **Participant**. Participants can ask for control and the Host or a Moderator can approve it.
+- The Host can choose what Moderators are allowed to do in each room.
+
+**Chat and fun**
+- Live chat with saved history (older messages load on request).
+- Emoji picker and "someone is typing..." indicator.
+- Emoji reactions that float over the video.
+- Live polls where everyone gets one vote.
+- Notes saved at an exact time of the video. Click a note to jump there.
+- Shared Pomodoro timer for study or work sessions.
+
+**Rooms**
+- Public or private rooms, optional password, and a limit on how many people can join.
+- Public rooms page to find and join open rooms.
+- Your own rooms and recently joined rooms on the dashboard.
+- Shared queue: add videos, reorder them, and vote to skip. The next video starts by itself.
+- Invite friends with a copy link button or WhatsApp.
+
+**Voice, video and screen share**
+- Voice and video calls right inside the room (up to 5 people).
+- Mute, camera on/off and screen sharing (one person shares at a time).
+
+**Account and security**
+- Sign up with email or Google.
+- Email verification and forgot password.
+- Safe login using httpOnly cookies and refresh tokens.
+- Personal stats page with charts (watch time, messages, rooms).
+
+**App feel**
+- Dark and light theme.
+- Browser notifications.
+- Install it like an app on phone or laptop (PWA).
+
+## Tech used
+
+- **Frontend:** React, Vite
+- **Backend:** Node.js, Express, WebSocket (`ws`)
+- **Database:** MongoDB (Mongoose)
+- **Calls:** WebRTC
+
+## Folder structure
 
 ```
 social-screen-pro/
-  server/   Express 5, ws, Mongoose, Nodemailer      (deploy on Render)
-  client/   React 19, Vite, PWA, Recharts            (deploy on Vercel)
-  docs/     WEBSOCKET_PROTOCOL.md
+  client/   the website (deploy on Vercel)
+  server/   the API and real-time server (deploy on Render)
 ```
 
-## Run it locally
+## Run it on your computer
 
-You need Node 18+ and a MongoDB (local `mongod` or a free MongoDB Atlas cluster).
+You need Node.js 18+ and a MongoDB database (local or free MongoDB Atlas).
 
 ```bash
-# 1) server
+# 1) Server
 cd server
-cp .env.example .env        # fill MONGODB_URI and JWT_SECRET
+cp .env.example .env     # fill MONGODB_URI and JWT_SECRET
 npm install
-npm run dev                 # http://localhost:5000
+npm run dev              # runs on http://localhost:5000
 
-# 2) client (new terminal)
+# 2) Client (open a new terminal)
 cd client
 cp .env.example .env
 npm install
-npm run dev                 # http://localhost:5173
+npm run dev              # runs on http://localhost:5173
 ```
 
-Open two different browsers (or one normal + one incognito window), register two users, create a room in one and join it from the other.
-Without SMTP settings, verification / reset emails are printed in the **server console**.
+To try it, open the site in two different browsers (or one normal and one incognito window), create two accounts, make a room in one and join it from the other.
 
-`cd server && npm test` runs a no-database smoke test of the whole WebSocket layer.
+## Optional setup
 
-## Features and where they live
+- **Email:** fill the `SMTP_*` values in `server/.env`. If you skip this, verification and reset links are printed in the server terminal.
+- **Google login:** create a Web OAuth client in Google Cloud Console, add your site URL under "Authorized JavaScript origins", and put the Client ID in `GOOGLE_CLIENT_ID` (server) and `VITE_GOOGLE_CLIENT_ID` (client).
+- **Video calls:** work on `localhost` and on HTTPS sites. On some strict networks a TURN server is needed (see `.env.example`).
 
-| Feature | Server | Client |
-|---|---|---|
-| Emoji reactions | `send_reaction` -> `Room.react` (whitelist + rate limit) | `ReactionLayer`, `ReactionBar`, CSS `floatUp` |
-| Chat history | `models/Message.js`, `messageService`, `GET /rooms/:id/messages` | `Chat.jsx` ("Load older"), last 50 on join |
-| Typing indicator | `typing_start/stop`, auto-stop after 5 s | throttled in `Chat.jsx`, 3 s idle stop |
-| Emoji picker | - | `emoji-picker-react` (lazy loaded) |
-| Invite share | - | `RoomTicket.jsx` (clipboard + WhatsApp) |
-| Dark / light theme | - | CSS variables, `ThemeContext`, saved in localStorage |
-| Room settings (public/private, password, max users) | `models/Room.js`, bcrypt, checked in `ws-ticket` and `join_room` | Dashboard options, `RoomSettingsModal` |
-| Public rooms page | `GET /rooms/public` | `PublicRooms.jsx` |
-| My rooms + history | `models/RoomJoin.js`, `GET /rooms/mine` | `Dashboard.jsx` |
-| Shared queue + vote skip | `Room.queue`, `queue_*`, `video_ended` | `QueuePanel.jsx` |
-| Moderator permissions per room | `modPermissions` in Room, `constants.can()` | settings modal, `utils/permissions.js` |
-| Voice / video / screen share | `rtc_*` signalling in `Room.js` | `useWebRTC.js`, `CallPanel.jsx` |
-| Live polls | `poll_*` | `PollPanel.jsx` |
-| Timestamp notes | `models/Note.js`, `note_*` | `NotesPanel.jsx` |
-| Shared Pomodoro | `Room.pomodoro` (phase, startedAt, duration) | `PomodoroPanel.jsx` |
-| Browser notifications | - | `services/notify.js`, bell button |
-| PWA | - | `vite-plugin-pwa` in `vite.config.js` |
-| httpOnly cookies | `utils/cookies.js`, `middleware/auth.js`, CORS `credentials: true` | axios `withCredentials` |
-| Refresh tokens | `RefreshToken` model, hashed, rotated on every refresh, deleted on logout | auto-refresh in `services/api.js` |
-| Email verify + forgot password | `authController`, `mailService` (Nodemailer) | `VerifyEmail`, `ForgotPassword`, `ResetPassword` |
-| Google login | `google-auth-library` verifies the ID token | `GoogleButton.jsx` (Google Identity Services) |
-| Personal stats | `historyService.getUserStats` (aggregation) | `Stats.jsx` (Recharts) |
+## Deploy
 
-## Things to set up
+1. **Server on Render:** root folder `server`, build command `npm install`, start command `npm start`. Add all values from `.env.example`, set `NODE_ENV=production` and `CLIENT_URL` to your website link.
+2. **Client on Vercel:** root folder `client`. Set `VITE_API_URL` (your server link + `/api`) and `VITE_WS_URL` (your server link starting with `wss://`).
+3. **Login cookies:** if the website and server are on different domains, set `COOKIE_SAMESITE=none` on the server. Some browsers (Safari, Brave) can block this, so the best way is to use one domain for both, like `app.yourdomain.com` and `api.yourdomain.com`, with `COOKIE_SAMESITE=lax`.
 
-**Google login (optional).** Google Cloud Console -> APIs & Services -> Credentials -> OAuth client ID (Web).
-Add `http://localhost:5173` (and your Vercel URL) to *Authorized JavaScript origins*.
-Put the Client ID in `server/.env` (`GOOGLE_CLIENT_ID`) and `client/.env` (`VITE_GOOGLE_CLIENT_ID`).
+## License
 
-**Email (optional locally, needed in production).** Fill `SMTP_*` in `server/.env` (Gmail app password, Brevo, Resend SMTP...). Set `REQUIRE_EMAIL_VERIFICATION=true` if unverified users must not log in.
-
-**Video calls.** Need HTTPS (localhost is fine for testing). STUN works on most networks; for strict networks add a TURN server (`VITE_TURN_*`). Mesh calls are limited to 5 people.
-
-## Deploying (Vercel + Render)
-
-1. Server on Render: root `server`, build `npm install`, start `npm start`. Env: everything from `.env.example`, with `NODE_ENV=production`, `CLIENT_URL=https://your-app.vercel.app`.
-2. Client on Vercel: root `client`, env `VITE_API_URL=https://your-api.onrender.com/api`, `VITE_WS_URL=wss://your-api.onrender.com`.
-3. **Cookies across two domains:** set `COOKIE_SAMESITE=none` on the server (needs HTTPS, already true on both). Some browsers (Safari, Brave, Chrome with strict settings) block third-party cookies, which would break login. The robust fix is to put the client and API on the same site, e.g. `app.yourdomain.com` and `api.yourdomain.com`, then use `COOKIE_SAMESITE=lax`.
-4. Render's free plan sleeps when idle; the first request after a pause is slow.
-
-## Security notes
-
-- JWT lives only in httpOnly cookies (JavaScript cannot read it). Access token 15 min, refresh token 30 days, stored hashed, rotated on every use, deleted on logout and on password reset.
-- CORS allows only listed origins; JSON-only body parsing means a plain cross-site HTML form cannot act as the user.
-- Room passwords, user passwords: bcrypt. Email/reset tokens: only a SHA-256 hash is stored.
-- Every WebSocket event is validated, permission-checked and rate-limited on the server. The client only hides buttons.
+All rights reserved. This is a private project.
