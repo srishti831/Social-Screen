@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
+// ---------- SMTP (local dev / fallback) ----------
 let transporter = null;
 function getTransporter() {
   if (!env.smtp.host) return null;
@@ -18,7 +19,7 @@ function getTransporter() {
   return transporter;
 }
 
-// ---- Gmail API (HTTPS, OAuth2 refresh token) ----
+// ---------- Gmail API (HTTPS, OAuth2 refresh token) ----------
 let gmailToken = { value: null, expiresAt: 0 };
 
 async function getGmailAccessToken() {
@@ -40,7 +41,7 @@ async function getGmailAccessToken() {
   return gmailToken.value;
 }
 
-/** Plain-text + HTML wala MIME message, UTF-8 safe. */
+/** Plain-text + HTML MIME message, UTF-8 safe. */
 function buildMime({ to, subject, text, html }) {
   const boundary = `b_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const b64 = (s) => Buffer.from(s || '', 'utf8').toString('base64').replace(/(.{76})/g, '$1\r\n');
@@ -79,13 +80,13 @@ async function sendViaGmail({ to, subject, text, html }) {
 }
 
 /**
- * Priority: 1) Gmail API  2) SMTP  3) console par print (local dev).
- * Never throws: mail ki problem se registration nahi tootna chahiye.
+ * Priority: 1) Gmail API (if MAIL_GOOGLE_* set)  2) SMTP  3) print to console (local dev).
+ * Never throws: a mail problem must not break registration.
  */
 export async function sendMail({ to, subject, text, html }) {
   try {
     const g = env.gmail;
-    if (g.clientId && g.clientSecret && g.refreshToken && g.sender) {
+    if (g && g.clientId && g.clientSecret && g.refreshToken && g.sender) {
       await sendViaGmail({ to, subject, text, html });
       return;
     }
@@ -99,3 +100,27 @@ export async function sendMail({ to, subject, text, html }) {
     console.error('Failed to send email:', err.message);
   }
 }
+
+// ---------- Email templates ----------
+const button = (url, label) =>
+  `<p><a href="${url}" style="background:#0b8fa3;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;display:inline-block">${label}</a></p><p>Or paste this link into your browser:<br>${url}</p>`;
+
+export const sendVerificationEmail = (user, token) => {
+  const url = `${env.clientUrl}/verify-email?token=${token}`;
+  return sendMail({
+    to: user.email,
+    subject: 'Verify your email - Social - Screen',
+    text: `Hi ${user.name}, verify your email by opening this link (valid for 24 hours): ${url}`,
+    html: `<p>Hi ${user.name},</p><p>Please verify your email (link valid for 24 hours).</p>${button(url, 'Verify email')}`,
+  });
+};
+
+export const sendPasswordResetEmail = (user, token) => {
+  const url = `${env.clientUrl}/reset-password?token=${token}`;
+  return sendMail({
+    to: user.email,
+    subject: 'Reset your password - Social - Screen',
+    text: `Hi ${user.name}, reset your password with this link (valid for 1 hour): ${url}. If you did not ask for this, ignore this email.`,
+    html: `<p>Hi ${user.name},</p><p>Reset your password (link valid for 1 hour). If you did not ask for this, ignore this email.</p>${button(url, 'Reset password')}`,
+  });
+};

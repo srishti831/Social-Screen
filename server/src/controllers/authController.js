@@ -52,7 +52,7 @@ export function createAuthController({ ticketService, roomManager }) {
 
       const passwordHash = await bcrypt.hash(password, env.bcryptRounds);
       const user = await createUser({ name: name.trim(), email: normalizedEmail, passwordHash });
-      const token =  createEmailToken(user, 'verify', 24 * HOUR);
+      const token =  await createEmailToken(user, 'verify', 24 * HOUR);
       sendVerificationEmail(user, token);
 
       await startSession(req, res, user);
@@ -119,7 +119,7 @@ export function createAuthController({ ticketService, roomManager }) {
       const user = await findUserById(req.user.id);
       if (user.emailVerified) return res.json({ success: true, message: 'Already verified' });
       const token = await createEmailToken(user, 'verify', 24 * HOUR);
-      await sendVerificationEmail(user, token);
+      sendVerificationEmail(user, token);
       return res.json({ success: true, message: 'Verification email sent' });
     },
 
@@ -129,8 +129,8 @@ export function createAuthController({ ticketService, roomManager }) {
       if (typeof email === 'string' && EMAIL_RE.test(email.trim())) {
         const user = await findUserByEmail(email.trim().toLowerCase());
         if (user) {
-          const token = createEmailToken(user, 'reset', HOUR);
-          await sendPasswordResetEmail(user, token);
+          const token = await createEmailToken(user, 'reset', HOUR);
+          sendPasswordResetEmail(user, token);
         }
       }
       res.json({ success: true, message: 'If that email is registered, a reset link is on its way.' });

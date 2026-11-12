@@ -21,6 +21,13 @@ export const env = {
     pass: process.env.SMTP_PASS || '',
     from: process.env.MAIL_FROM || 'Social - Screen <no-reply@social-screen.local>',
   },
+  gmail: {
+    clientId: process.env.MAIL_GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.MAIL_GOOGLE_CLIENT_SECRET || '',
+    refreshToken: process.env.MAIL_GOOGLE_REFRESH_TOKEN || '',
+    sender: process.env.MAIL_SENDER_EMAIL || '',
+    senderName: process.env.MAIL_SENDER_NAME || 'Social-Screen',
+  },
   requireEmailVerification: process.env.REQUIRE_EMAIL_VERIFICATION === 'true',
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
 };
