@@ -52,8 +52,8 @@ export function createAuthController({ ticketService, roomManager }) {
 
       const passwordHash = await bcrypt.hash(password, env.bcryptRounds);
       const user = await createUser({ name: name.trim(), email: normalizedEmail, passwordHash });
-      const token = await createEmailToken(user, 'verify', 24 * HOUR);
-      await sendVerificationEmail(user, token);
+      const token =  createEmailToken(user, 'verify', 24 * HOUR);
+      sendVerificationEmail(user, token);
 
       await startSession(req, res, user);
       res.status(201).json({ success: true, user: toPublicUser(user) });
@@ -129,7 +129,7 @@ export function createAuthController({ ticketService, roomManager }) {
       if (typeof email === 'string' && EMAIL_RE.test(email.trim())) {
         const user = await findUserByEmail(email.trim().toLowerCase());
         if (user) {
-          const token = await createEmailToken(user, 'reset', HOUR);
+          const token = createEmailToken(user, 'reset', HOUR);
           await sendPasswordResetEmail(user, token);
         }
       }
